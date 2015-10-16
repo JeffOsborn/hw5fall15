@@ -43,15 +43,17 @@ Given /^I am on the RottenPotatoes home page$/ do
 # Note that you may need to add additional step definitions beyond these
 
 
+
 # Add a declarative step here for populating the DB with movies.
 
 Given /the following movies have been added to RottenPotatoes:/ do |movies_table|
-  pending  # Remove this statement when you finish implementing the test step
+  # Remove this statement when you finish implementing the test step
   movies_table.hashes.each do |movie|
     # Each returned movie will be a hash representing one row of the movies_table
     # The keys will be the table headers and the values will be the row contents.
     # Entries can be directly to the database with ActiveRecord methods
     # Add the necessary Active Record call(s) to populate the database.
+    Movie.create(movie)
   end
 end
 
@@ -59,16 +61,51 @@ When /^I have opted to see movies rated: "(.*?)"$/ do |arg1|
   # HINT: use String#split to split up the rating_list, then
   # iterate over the ratings and check/uncheck the ratings
   # using the appropriate Capybara command(s)
-  pending  #remove this statement after implementing the test step
+  #remove this statement after implementing the test step
+  
+  rated = ["G","PG","PG-13","NC-17","R"]
+  rated.each do |i|
+    page.uncheck("ratings_#{i}")
+  end
+  
+  arg1.split(", ").each do |rating|
+    page.check("ratings_#{rating}")
+  end
+  
+  click_button 'Refresh'
 end
 
 Then /^I should see only movies rated: "(.*?)"$/ do |arg1|
-  pending  #remove this statement after implementing the test step
+  #remove this statement after implementing the test step
+  valid = false
+  rows = page.all("table#movies tbody tr td[2]").map {|t| t.text}
+  rows.each do |r|
+     valid = false
+     arg1.split(", ").each do |rating|
+       if r == rating
+           puts r
+           puts rating
+           valid = true;
+           break
+       end
+     end
+     break if valid == false
+  end    
+  expect(valid).to be_truthy
 end
 
 Then /^I should see all of the movies$/ do
-  pending  #remove this statement after implementing the test step
+    rows = page.all("table#movies tbody tr td[1]").map {|t| t.text}
+    rows.size == Movie.all.count
 end
 
 
+When /^I order by "(.*?)"$/ do |arg1|
+  click_on(arg1)
+end
 
+Then /^I should see "(.*?)" before "(.*?)"$/ do |movie1, movie2|
+  rows = page.all("table#movies tbody tr td[1]").map {|t| t.text}
+  valid = true if rows.index(movie1)<rows.index(movie2)
+  expect(valid).to be_truthy
+end
